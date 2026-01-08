@@ -1,20 +1,16 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc =
-  "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
+ "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js";
 
-async function readPDF(file) {
+async function extractText(file) {
     const reader = new FileReader();
-
     return new Promise(resolve => {
         reader.onload = async () => {
             const pdf = await pdfjsLib.getDocument(new Uint8Array(reader.result)).promise;
             let text = "";
-
             for (let i = 1; i <= pdf.numPages; i++) {
                 const page = await pdf.getPage(i);
                 const content = await page.getTextContent();
-                content.items.forEach(item => {
-                    text += item.str + "\n";
-                });
+                content.items.forEach(item => text += item.str + "\n");
             }
             resolve(text.trim());
         };
@@ -22,36 +18,43 @@ async function readPDF(file) {
     });
 }
 
+function similarity(model, student) {
+    const m = model.toLowerCase().split(" ");
+    const s = student.toLowerCase().split(" ");
+    let match = 0;
+    m.forEach(w => { if (s.includes(w)) match++; });
+    return match / m.length;
+}
+
 async function evaluate() {
+    const keyPdf = document.getElementById("keyPdf").files[0];
+    const studentPdf = document.getElementById("studentPdf").files[0];
 
-    const keyFile = document.getElementById("keyPdf").files[0];
-    const studentFile = document.getElementById("studentPdf").files[0];
-
-    if (!keyFile || !studentFile) {
+    if (!keyPdf || !studentPdf) {
         alert("Please upload both PDFs");
         return;
     }
 
-    const keyText = await readPDF(keyFile);
-    const studentText = await readPDF(studentFile);
+    const keyText = await extractText(keyPdf);
+    const studentText = await extractText(studentPdf);
 
-    const keyAnswers = keyText.split("\n");
-    const studentAnswers = studentText.split("\n");
+    const keyLines = keyText.split("\n");
+    const studentLines = studentText.split("\n");
 
-    let score = 0;
-    let total = keyAnswers.length;
+    let total = 0, score = 0;
+    let html = "<h3>Evaluation Result</h3>";
 
-    for (let i = 0; i < total; i++) {
-        if (
-            studentAnswers[i] &&
-            keyAnswers[i].toLowerCase() === studentAnswers[i].toLowerCase()
-        ) {
-            score++;
-        }
-    }
+    keyLines.forEach((line, i) => {
+        const [q, marks, model] = line.split("|");
+        const student = studentLines[i]?.split("|")[1] || "";
 
-    const percent = (score / total) * 100;
+        const s = similarity(model, student) * parseInt(marks);
+        total += parseInt(marks);
+        score += s;
 
-    document.getElementById("output").innerHTML =
-        `Score: ${score} / ${total}<br>Percentage: ${percent.toFixed(2)}%`;
+        html += `Q${i+1}: ${s.toFixed(2)} / ${marks}<br>`;
+    });
+
+    html += `<br><b>Total Score:</b> ${score.toFixed(2)} / ${total}`;
+    document.getElementById("result").innerHTML = html;
 }
