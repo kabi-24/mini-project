@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PDF Answer Sheet Evaluation</title>
+    <link rel="stylesheet" href="style.css">
+
+    <!-- PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h2>Automated Answer Sheet Evaluation</h2>
+
+    <label>Upload Answer Key (PDF)</label>
+    <input type="file" id="keyPdf" accept="application/pdf">
+
+    <label>Upload Student Answer Sheet (PDF)</label>
+    <input type="file" id="studentPdf" accept="application/pdf">
+
+    <button onclick="evaluate()">Evaluate</button>
+
+    <h3 id="output"></h3>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
